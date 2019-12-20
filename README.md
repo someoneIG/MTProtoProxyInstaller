@@ -121,11 +121,7 @@ Iran _MAY_ use DPI to block your server. So private uses may not be safe too. I'
 
 ~~I DO NOT USE MTPROTO PROXY MYSELF~~ (Right now I'm using it with Fake-TLS and it's been a month that my server is not blocked yet) You can also use [shadowsocks with Cloak](https://github.com/HirbodBehnam/Shadowsocks-Cloak-Installer)(**Highly Recommended**) or [wireguard](https://github.com/l-n-s/wireguard-install) or [openvpn](https://github.com/angristan/openvpn-install) instead.
 </details>
-(If you are from Iran, you may need to open this link with VPN)
 
-http://rizy.ir/4EbW
-#### English guide to buying servers and installing script
-https://www.reddit.com/r/Telegram/comments/95m5vi/how_to_deploy_mtproto_proxy_server_on_centos/
 ### Proxy Projects
 [Python Proxy](https://github.com/alexbers/mtprotoproxy)
 
