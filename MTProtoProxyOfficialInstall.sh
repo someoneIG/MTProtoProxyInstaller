@@ -81,7 +81,7 @@ regex='^[0-9]+$'
 distro=$(awk -F= '/^NAME/{print $2}' /etc/os-release)
 clear
 if [ -d "/opt/MTProxy" ]; then
-	echo "You have already installed MTProxy! What do you want to do?"
+	echo "What do you want to do? | T.me/DexterLX"
 	echo "  1) Show connection links"
 	echo "  2) Change TAG"
 	echo "  3) Add a secret"
