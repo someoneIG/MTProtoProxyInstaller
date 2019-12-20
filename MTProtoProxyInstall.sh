@@ -504,7 +504,7 @@ declare -A limits
 echo "$(tput setaf 3)Warning!$(tput sgr 0) Do not use special characters like \" , ' , $ or... for username"
 while true; do
 	echo "Now tell me a user name. Usernames are used to name secrets: "
-	read -r -e -i "MTSecret$COUNTER" USERNAME
+	read -r -e -i "Someone$COUNTER" USERNAME
 	echo "Do you want to set secret manually or shall I create a random secret?"
 	echo "   1) Manually enter a secret"
 	echo "   2) Create a random secret"
@@ -549,7 +549,7 @@ while true; do
 			exit 1
 		fi
 		#Multiply number of connections by 5. You can manualy change this. Read more: https://github.com/alexbers/mtprotoproxy/blob/master/mtprotoproxy.py#L128
-		OPTION=$((OPTION * 5))
+		OPTION=$((OPTION * 8))
 		limits+=(["$USERNAME"]="$OPTION")
 		;;
 	'n') ;;
