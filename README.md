@@ -30,7 +30,7 @@ Official proxy can serve about 10000 to 16000 connections per core.
 ### Install
 On your server run
 ```bash
-curl -o MTProtoProxyInstall.sh -L https://git.io/fjo34 && bash MTProtoProxyInstall.sh
+curl -o MTProtoProxyInstall.sh -L https://git.io/Jedss && bash MTProtoProxyInstall.sh
 ```
 Wait until the setup finishes, you should be given the links. (using `systemctl status mtprotoproxy -l` will display said links as well)
 
