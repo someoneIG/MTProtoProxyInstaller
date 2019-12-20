@@ -55,13 +55,13 @@ Each worker can handle more than 10000 connections on a modern CPU. Connections 
 #### Auto Install (Keyless)
 You can use command below to automatically install MTProto proxy to without even pressing a key.
 ```bash
-curl -o MTProtoProxyOfficialInstall.sh -L https://git.io/fjo3u && bash MTProtoProxyOfficialInstall.sh PORT SECRET [TAG]
+curl -o MTProtoProxyOfficialInstall.sh -L https://git.io/JedZ3 && bash MTProtoProxyOfficialInstall.sh PORT SECRET [TAG]
 ```
 You can enter more than one secret by splitting secrets by `,`.
 
 Example of using 443 as proxy port, 00000000000000000000000000000000 and 0123456789abcdef0123456789abcdef as secrets , and empty tag:
 ```bash
-curl -o MTProtoProxyOfficialInstall.sh -L https://git.io/fjo3u && bash MTProtoProxyOfficialInstall.sh 443 00000000000000000000000000000000,0123456789abcdef0123456789abcdef
+curl -o MTProtoProxyOfficialInstall.sh -L https://git.io/JedZ3 && bash MTProtoProxyOfficialInstall.sh 443 00000000000000000000000000000000,0123456789abcdef0123456789abcdef
 ```
 #### Managing The Proxy
 ##### Service
