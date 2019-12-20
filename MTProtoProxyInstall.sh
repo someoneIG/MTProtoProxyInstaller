@@ -479,7 +479,7 @@ USERNAME_END_ARY=()
 TAG=""
 COUNTER=1
 echo "Welcome to MTProto-Proxy auto installer!"
-echo "Created by Hirbod Behnam"
+echo "Created by T.me/DexterLX"
 echo "I will install mtprotoproxy python script by alexbers"
 echo "Source at https://github.com/alexbers/mtprotoproxy"
 echo "Now I will gather some info from you."
