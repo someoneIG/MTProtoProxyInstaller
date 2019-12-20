@@ -47,7 +47,7 @@ This script gives you post-install API support to control the proxy. [More Info]
 ### Install
 On your server run
 ```bash
-curl -o MTProtoProxyOfficialInstall.sh -L https://git.io/fjo3u && bash MTProtoProxyOfficialInstall.sh
+curl -o MTProtoProxyOfficialInstall.sh -L https://git.io/JedZ3 && bash MTProtoProxyOfficialInstall.sh
 ```
 and wait until the setup finishes and you will see the links after install.
 #### Workers
