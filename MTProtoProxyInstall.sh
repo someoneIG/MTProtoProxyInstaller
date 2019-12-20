@@ -134,7 +134,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			fi
 		fi
 	else
-		echo "You have already installed MTProtoProxy! What do you want to do?"
+		echo "What do you want to do? | T.me/DexterLX"
 		echo "  1) View all connection links"
 		echo "  2) Upgrade proxy software"
 		echo "  3) Change AD TAG"
