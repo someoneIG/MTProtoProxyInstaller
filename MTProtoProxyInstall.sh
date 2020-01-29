@@ -1,4 +1,5 @@
 #!/bin/bash
+regex='^[0-9]+$'
 function RemoveMultiLineUser() {
 	local SECRET_T
 	SECRET_T=$(python3.6 -c 'import config;print(getattr(config, "USERS",""))')
@@ -50,7 +51,6 @@ function ListUsersAndSelect() {
 		COUNTER=$((COUNTER + 1))
 	done
 	read -r -p "Please select a user by it's index: " USER_TO_LIMIT
-	regex='^[0-9]+$'
 	if ! [[ $USER_TO_LIMIT =~ $regex ]]; then
 		echo "$(tput setaf 1)Error:$(tput sgr 0) The input is not a valid number"
 		exit 1
@@ -135,16 +135,17 @@ if [ -d "/opt/mtprotoproxy" ]; then
 		fi
 	else
 		echo "What do you want to do? | T.me/DexterLX"
-		echo "  1) View all connection links"
-		echo "  2) Upgrade proxy software"
-		echo "  3) Change AD TAG"
-		echo "  4) Add a secret"
-		echo "  5) Revoke a secret"
-		echo "  6) Change user connection limits"
-		echo "  7) Change user expiry date"
-		echo "  8) Generate firewall rules"
-		echo "  9) Uninstall Proxy"
-		echo "  *) Exit"
+		echo "  1 ) View all connection links"
+		echo "  2 ) Upgrade proxy software"
+		echo "  3 ) Change AD TAG"
+		echo "  4 ) Add a secret"
+		echo "  5 ) Revoke a secret"
+		echo "  6 ) Change user connection limits"
+		echo "  7 ) Change user expiry date"
+		echo "  8 ) Change user quota options"
+		echo "  9 ) Generate firewall rules"
+		echo "  10) Uninstall Proxy"
+		echo "  * ) Exit"
 		read -r -p "Please enter a number: " OPTION
 	fi
 	case $OPTION in
@@ -183,14 +184,18 @@ if [ -d "/opt/mtprotoproxy" ]; then
 		;;
 	#Update
 	2)
-		systemctl stop mtprotoproxy
-		mv /opt/mtprotoproxy/config.py /tmp/config.py
-		git pull
-		mv /tmp/config.py /opt/mtprotoproxy/config.py
-		#Update cryptography and uvloop
-		pip3.6 install --upgrade cryptography uvloop
-		systemctl start mtprotoproxy
-		echo "Proxy updated."
+		read -r -p "If you have set quota limits, they will be reseted. Continue?(y/n) " OPTION
+		OPTION="$(echo $OPTION | tr '[A-Z]' '[a-z]')"
+		if [[ "$OPTION" == "y" ]]; then
+			systemctl stop mtprotoproxy
+			mv /opt/mtprotoproxy/config.py /tmp/config.py
+			git pull
+			mv /tmp/config.py /opt/mtprotoproxy/config.py
+			#Update cryptography and uvloop
+			pip3.6 install --upgrade cryptography uvloop
+			systemctl start mtprotoproxy
+			echo "Proxy updated."
+		fi
 		;;
 	#Change AD_TAG
 	3)
@@ -203,7 +208,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			echo "Current tag is $TAG. If you want to remove it, just press enter. Otherwise type the new TAG:"
 		fi
 		read -r TAG
-		if ! [ -z "$TAG" ] && [ "$OldEmptyTag" = true ]; then
+		if [ -n "$TAG" ] && [ "$OldEmptyTag" = true ]; then
 			#This adds the AD_TAG to end of file
 			echo "" >>config.py #Adds a new line
 			TAGTEMP="AD_TAG = "
@@ -211,7 +216,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			TAGTEMP+="$TAG"
 			TAGTEMP+='"'
 			echo "$TAGTEMP" >>config.py
-		elif ! [ -z "$TAG" ] && [ "$OldEmptyTag" = false ]; then
+		elif [ -n "$TAG" ] && [ "$OldEmptyTag" = false ]; then
 			# This replaces the AD_TAG
 			TAGTEMP='"'
 			TAGTEMP+="$TAG"
@@ -349,7 +354,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			fi
 		else
 			if [ ${limits[$KEY]+abc} ]; then
-				MAX_USER=$((limits[$KEY] / 7))
+				MAX_USER=$((limits[$KEY] / 8))
 				echo "Current limit is $MAX_USER concurrent users. (${limits[$KEY]} connections)"
 			else
 				echo "This user have no restrictions."
@@ -360,7 +365,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 				exit 1
 			fi
 		fi
-		MAX_USER=$((MAX_USER * 7))
+		MAX_USER=$((MAX_USER * 8))
 		if [ "$MAX_USER" = "0" ]; then
 			unset limits["$KEY"]
 		else
@@ -417,8 +422,45 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			echo "Done"
 		fi
 		;;
-	#Firewall rules
+	#Quota limit stuff
 	8)
+		#API Usage: bash MTProtoProxyInstall.sh 8 <USERNAME> <LIMIT> -> Pass nothing as <LIMIT> to remove; The number is in bytes
+		if [ "$#" -ge 2 ]; then
+			GetSecretFromUsername "$2"
+			LIMIT="$3"
+		else
+			ListUsersAndSelect
+			read -r -p "Enter the limit of the user in bytes. Enter nothing for removal: " LIMIT
+		fi
+		if [[ $LIMIT == "" ]]; then
+			j=$(jq -c --arg k "$KEY" 'del(.[$k])' limits_quota.json)
+		else
+			if ! [[ $LIMIT =~ $regex ]]; then
+				if [ "$#" -ge 2 ]; then
+					PrintErrorJson "Invalid number format"
+				else
+					echo "$(tput setaf 1)Error:$(tput sgr 0) The input is not a valid number"
+					exit 1
+				fi
+			fi
+			j=$(jq -c --arg k "$KEY" --argjson v "$LIMIT" '.[$k] = $v' limits_quota.json)
+		fi
+		rm limits_quota.json
+		echo -e "$j" >> limits_quota.json
+		#Save it to the config.py
+		sed -i '/^USER_DATA_QUOTA\s*=.*/ d' config.py #Remove settings
+		echo "" >>config.py
+		echo "USER_DATA_QUOTA = $j" >>config.py
+		sed -i '/^$/d' config.py #Remove empty lines
+		RestartService
+		if [ "$#" -ge 2 ]; then
+			PrintOkJson ""
+		else
+			echo "Done"
+		fi
+		;;
+	#Firewall rules
+	9)
 		PORT=$(python3.6 -c 'import config;print(getattr(config, "PORT",-1))')
 		if [[ $distro =~ "CentOS" ]]; then
 			echo "firewall-cmd --zone=public --add-port=$PORT/tcp"
@@ -443,7 +485,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 		fi
 		;;
 	#Uninstall proxy
-	9)
+	10)
 		read -r -p "I still keep some packages like python. Do want to uninstall MTProto-Proxy?(y/n) " OPTION
 		OPTION="$(echo $OPTION | tr '[A-Z]' '[a-z]')"
 		case $OPTION in
@@ -471,7 +513,6 @@ if [ -d "/opt/mtprotoproxy" ]; then
 	exit
 fi
 #Variables
-regex='^[0-9]+$'
 SECRETS=""
 SECRET=""
 SECRET_END_ARY=()
@@ -485,7 +526,7 @@ echo "Support : T.me/DexterLX"
 echo "Now I will gather some info from you."
 echo ""
 echo ""
-read -r -p "Select a port to proxy listen on it (-1 to randomize): " -e -i "-1" PORT
+read -r -p "Select a port to proxy listen on it (-1 to randomize): " -e -i "443" PORT
 if [[ $PORT -eq -1 ]]; then
 	GetRandomPort
 	echo "I've selected $PORT as your port."
@@ -504,7 +545,7 @@ declare -A limits
 echo "$(tput setaf 3)Warning!$(tput sgr 0) Do not use special characters like \" , ' , $ or... for username"
 while true; do
 	echo "Now tell me a user name. Usernames are used to name secrets: "
-	read -r -e -i "Someone$COUNTER" USERNAME
+	read -r -e -i "MTSecret$COUNTER" USERNAME
 	echo "Do you want to set secret manually or shall I create a random secret?"
 	echo "   1) Manually enter a secret"
 	echo "   2) Create a random secret"
@@ -548,7 +589,7 @@ while true; do
 			echo "$(tput setaf 1)Error:$(tput sgr 0) The input is not a valid number"
 			exit 1
 		fi
-		#Multiply number of connections by 5. You can manualy change this. Read more: https://github.com/alexbers/mtprotoproxy/blob/master/mtprotoproxy.py#L128
+		#Multiply number of connections by 8. You can manualy change this. Read more: https://github.com/alexbers/mtprotoproxy/blob/master/mtprotoproxy.py#L202
 		OPTION=$((OPTION * 8))
 		limits+=(["$USERNAME"]="$OPTION")
 		;;
@@ -683,16 +724,17 @@ USERS = { $SECRETS }
 USER_MAX_TCP_CONNS = { $LIMITER_CONFIG }
 TLS_DOMAIN = \"$TLS_DOMAIN\"
 " >>config.py
-if ! [ -z "$TAG" ]; then
+if [ -n "$TAG" ]; then
 	TAGTEMP="AD_TAG = "
 	TAGTEMP+='"'
 	TAGTEMP+="$TAG"
 	TAGTEMP+='"'
 	echo "$TAGTEMP" >>config.py
 fi
-echo "$SECURE_MODE" >>config.py
-echo -e "$LIMITER_FILE" >>"limits_bash.txt"
-echo "{}" >>"limits_date.json"
+echo "$SECURE_MODE" >> config.py
+echo -e "$LIMITER_FILE" >> "limits_bash.txt"
+echo "{}" >> "limits_date.json"
+echo "{}" >> "limits_quota.json"
 #Setup firewall
 echo "Setting firewalld rules"
 if [[ $distro =~ "CentOS" ]]; then
