@@ -31,7 +31,6 @@ function GetRandomPort() {
 }
 function ListUsersAndSelect() {
 	clear
-	rm -f tempSecrets.json
 	SECRET=$(python3.6 -c 'import config;print(getattr(config, "USERS",""))')
 	SECRET_COUNT=$(python3.6 -c 'import config;print(len(getattr(config, "USERS","")))')
 	if [ "$SECRET_COUNT" == "0" ]; then
@@ -40,7 +39,7 @@ function ListUsersAndSelect() {
 	fi
 	RemoveMultiLineUser #Regenerate USERS only in one line
 	SECRET=$(echo "$SECRET" | tr "'" '"')
-	echo "$SECRET" >>tempSecrets.json
+	echo "$SECRET" >tempSecrets.json
 	SECRET_ARY=()
 	mapfile -t SECRET_ARY < <(jq -r 'keys[]' tempSecrets.json)
 	echo "Here are list of current users:"
@@ -134,7 +133,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			fi
 		fi
 	else
-		echo "What do you want to do? | T.me/DexterLX"
+		echo "What do you want to do?  |  T.me/DexterLX"
 		echo "  1 ) View all connection links"
 		echo "  2 ) Upgrade proxy software"
 		echo "  3 ) Change AD TAG"
@@ -158,7 +157,6 @@ if [ -d "/opt/mtprotoproxy" ]; then
 		if [ $CURL_EXIT_STATUS -ne 0 ]; then
 			PUBLIC_IP="YOUR_IP"
 		fi
-		rm -f tempSecrets.json
 		PORT=$(python3.6 -c 'import config;print(getattr(config, "PORT",-1))')
 		SECRET=$(python3.6 -c 'import config;print(getattr(config, "USERS",""))')
 		SECRET_COUNT=$(python3.6 -c 'import config;print(len(getattr(config, "USERS","")))')
@@ -169,7 +167,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 		fi
 		RemoveMultiLineUser #Regenerate USERS only in one line
 		SECRET=$(echo "$SECRET" | tr "'" '"')
-		echo "$SECRET" >>tempSecrets.json
+		echo "$SECRET" >tempSecrets.json
 		SECRET_ARY=()
 		mapfile -t SECRET_ARY < <(jq -r 'keys[]' tempSecrets.json)
 		#Print
@@ -372,8 +370,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			limits[$KEY]=$MAX_USER
 		fi
 		GenerateConnectionLimiterConfig
-		rm limits_bash.txt
-		echo -e "$LIMITER_FILE" >>"limits_bash.txt"
+		echo -e "$LIMITER_FILE" >"limits_bash.txt"
 		sed -i '/^USER_MAX_TCP_CONNS\s*=.*/ d' config.py #Remove settings
 		echo "" >>config.py
 		echo "USER_MAX_TCP_CONNS = { $LIMITER_CONFIG }" >>config.py
@@ -408,8 +405,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 		else
 			j=$(jq -c --arg k "$KEY" --arg v "$DATE" '.[$k] = $v' limits_date.json)
 		fi
-		rm limits_date.json
-		echo -e "$j" >>limits_date.json
+		echo -e "$j" >limits_date.json
 		#Save it to the config.py
 		sed -i '/^USER_EXPIRATIONS\s*=.*/ d' config.py #Remove settings
 		echo "" >>config.py
@@ -445,8 +441,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			fi
 			j=$(jq -c --arg k "$KEY" --argjson v "$LIMIT" '.[$k] = $v' limits_quota.json)
 		fi
-		rm limits_quota.json
-		echo -e "$j" >> limits_quota.json
+		echo -e "$j" >limits_quota.json
 		#Save it to the config.py
 		sed -i '/^USER_DATA_QUOTA\s*=.*/ d' config.py #Remove settings
 		echo "" >>config.py
@@ -493,8 +488,7 @@ if [ -d "/opt/mtprotoproxy" ]; then
 			PORT=$(python3.6 -c 'import config;print(getattr(config, "PORT",-1))')
 			systemctl stop mtprotoproxy
 			systemctl disable mtprotoproxy
-			rm -rf /opt/mtprotoproxy
-			rm -f /etc/systemd/system/mtprotoproxy.service
+			rm -rf /opt/mtprotoproxy /etc/systemd/system/mtprotoproxy.service
 			systemctl daemon-reload
 			if [[ $distro =~ "CentOS" ]]; then
 				firewall-cmd --remove-port="$PORT"/tcp
@@ -642,21 +636,12 @@ case $OPTION in
 esac
 #Now setup the tag
 read -r -p "Do you want to setup the advertising tag?(y/n) " -e -i "n" OPTION
-OPTION="$(echo $OPTION | tr '[A-Z]' '[a-z]')"
-case $OPTION in
-'y')
+if [[ "$OPTION" == "y" || "$OPTION" == "Y" ]]; then
 	echo "$(tput setaf 1)Note:$(tput sgr 0) Joined users and admins won't see the channel at very top."
 	echo "On telegram, go to @MTProxybot Bot and enter this server's IP and $PORT as port. Then as secret enter $SECRET"
 	echo "Bot will give you a string named TAG. Enter it here:"
 	read -r TAG
-	;;
-'n') ;;
-
-*)
-	echo "$(tput setaf 1)Invalid option$(tput sgr 0)"
-	exit 1
-	;;
-esac
+fi
 #Change host mask
 read -r -p "Select a host that DPI thinks you are visiting (TLS_DOMAIN): " -e -i "www.cloudflare.com" TLS_DOMAIN
 #Now lets install
@@ -718,14 +703,12 @@ cd /opt || exit 2
 git clone https://github.com/alexbers/mtprotoproxy.git
 cd mtprotoproxy || exit 2
 #Now edit the config file
-rm -f config.py
-touch config.py
 chmod 0777 config.py
 echo "PORT = $PORT
 USERS = { $SECRETS }
 USER_MAX_TCP_CONNS = { $LIMITER_CONFIG }
 TLS_DOMAIN = \"$TLS_DOMAIN\"
-" >>config.py
+" >config.py
 if [ -n "$TAG" ]; then
 	TAGTEMP="AD_TAG = "
 	TAGTEMP+='"'
@@ -774,6 +757,18 @@ elif [[ $distro =~ "Ubuntu" ]]; then
 			;;
 		esac
 	fi
+	#Use BBR on user will
+	if ! [ "$(sysctl -n net.ipv4.tcp_congestion_control)" = "bbr" ]; then
+		echo
+		read -r -p "Do you want to use BBR? BBR might help your proxy run faster.(y/n) " -e -i "y" OPTION
+		case $OPTION in
+		"y" | "Y")
+			echo 'net.core.default_qdisc=fq' | tee -a /etc/sysctl.conf
+			echo 'net.ipv4.tcp_congestion_control=bbr' | tee -a /etc/sysctl.conf
+			sysctl -p
+			;;
+		esac
+	fi
 fi
 #Now lets create the service
 cd /etc/systemd/system || exit 2
@@ -798,12 +793,10 @@ tput sgr 0
 echo "Ok it must be done. I created a service to run or stop the proxy."
 echo 'Use "systemctl start mtprotoproxy" or "systemctl stop mtprotoproxy" to start or stop it'
 echo
-echo "Use these links to connect to your proxy (With random padding):"
+echo "Use these links to connect to your proxy:"
 PUBLIC_IP="$(curl https://api.ipify.org -sS)"
 CURL_EXIT_STATUS=$?
-if [ $CURL_EXIT_STATUS -ne 0 ]; then
-	PUBLIC_IP="YOUR_IP"
-fi
+[ $CURL_EXIT_STATUS -ne 0 ] && PUBLIC_IP="YOUR_IP"
 COUNTER=0
 for i in "${SECRET_END_ARY[@]}"; do
 	s=$(python3.6 -c "print(\"ee\" + \"$SECRET\" + \"$TLS_DOMAIN\".encode().hex())")
